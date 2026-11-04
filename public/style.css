@@ -1,0 +1,55 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 2em auto;
+  padding: 0 1em;
+  color: #222;
+}
+
+a { color: #2563eb; }
+
+input, select {
+  padding: 0.45em 0.6em;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.45em 0.9em;
+  border: 0;
+  border-radius: 4px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover { opacity: 0.9; }
+
+#teksPesan {
+  margin-top: 1em;
+  font-weight: 500;
+}
+
+.halaman-admin { max-width: 760px; }
+
+.halaman-admin #tombolBatal { background: #6b7280; }
+
+.halaman-admin table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 1em;
+}
+
+.halaman-admin th,
+.halaman-admin td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.halaman-admin th { background: #f3f4f6; }
+
+.halaman-admin td button { margin-right: 4px; }
+
+.halaman-pembeli { max-width: 560px; }
+
+.halaman-pembeli input { width: 5em; }

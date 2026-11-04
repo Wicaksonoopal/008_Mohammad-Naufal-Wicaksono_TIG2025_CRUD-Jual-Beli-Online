@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Produk</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="halaman-admin">
+  <h1>Data Produk</h1>
+  <a href="pembeli.html">Halaman Pembeli</a>
+  <h3>Kelola Produk:</h3>
+
+  <form id="formProduk">
+    <div>
+      <input id="inputKode" placeholder="Kode Produk" required>
+      <input id="inputNama" placeholder="Nama Produk" required>
+      <input id="inputHarga" type="number" min="0" placeholder="Harga" required>
+    </div>
+    <div style="margin-top: 1em;">
+      <input id="inputStok" type="number" min="0" placeholder="Stok" required>
+      <button type="submit" id="tombolSimpan">Simpan</button>
+      <button type="button" id="tombolBatal">Batal</button>
+    </div>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Kode Produk</th>
+        <th>Nama Produk</th>
+        <th>Harga</th>
+        <th>Stok</th>
+        <th>Edit Produk</th>
+      </tr>
+    </thead>
+    <tbody id="isiTabel"></tbody>
+  </table>
+  <p id="teksPesan" role="status"></p>
+
+  <script>
+    const URL_API = '/api/produk';
+    const ambil = id => document.getElementById(id);
+
+    const formProduk = ambil('formProduk');
+    const isiTabel = ambil('isiTabel');
+    const teksPesan = ambil('teksPesan');
+    const tombolSimpan = ambil('tombolSimpan');
+
+    const kolom = {
+      kode: ambil('inputKode'),
+      nama: ambil('inputNama'),
+      harga: ambil('inputHarga'),
+      stok: ambil('inputStok')
+    };
+
+    let kodeDiedit = null;
+
+    const tampilkanPesan = teks => { teksPesan.textContent = teks; };
+
+    function buatTombol(label, aksi) {
+      const tombol = document.createElement('button');
+      tombol.textContent = label;
+      tombol.onclick = aksi;
+      return tombol;
+    }
+
+    function buatBaris(produk) {
+      const baris = document.createElement('tr');
+
+      [produk.kode_produk, produk.nama_produk, produk.harga, produk.stok].forEach(nilai => {
+        const sel = document.createElement('td');
+        sel.textContent = nilai;
+        baris.appendChild(sel);
+      });
+
+      const selAksi = document.createElement('td');
+      selAksi.append(
+        buatTombol('Edit', () => isiFormEdit(produk)),
+        buatTombol('Hapus', () => hapusProduk(produk.kode_produk))
+      );
+      baris.appendChild(selAksi);
+
+      return baris;
+    }
+
+    function bacaForm() {
+      return {
+        kode_produk: kolom.kode.value.trim(),
+        nama_produk: kolom.nama.value.trim(),
+        harga: Number(kolom.harga.value),
+        stok: Number(kolom.stok.value)
+      };
+    }
+
+    // Tabel
+
+    function renderTabel(daftarProduk) {
+      isiTabel.replaceChildren(...daftarProduk.map(buatBaris));
+    }
+
+    // Ambil semua produk (GET)
+    async function muatProduk() {
+      try {
+        const respons = await fetch(URL_API);
+        if (!respons.ok) throw new Error('Data produk tidak dapat diambil');
+        renderTabel(await respons.json());
+      } catch (err) {
+        tampilkanPesan(err.message);
+      }
+    }
+
+    // Simpan produk baru (POST) atau perbarui (PUT)
+    async function simpanProduk(data) {
+      try {
+        const sedangEdit = kodeDiedit !== null;
+        const url = sedangEdit ? URL_API + '/' + encodeURIComponent(kodeDiedit) : URL_API;
+
+        const respons = await fetch(url, {
+          method: sedangEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const hasil = await respons.json();
+        if (!respons.ok) throw new Error(hasil.pesan);
+
+        resetForm();
+        await muatProduk();
+        tampilkanPesan(hasil.pesan);
+      } catch (err) {
+        tampilkanPesan(err.message);
+      }
+    }
+
+    // Hapus produk (DELETE)
+    async function hapusProduk(kode) {
+      if (!confirm('Yakin ingin menghapus produk ' + kode + '?')) return;
+
+      try {
+        const respons = await fetch(URL_API + '/' + encodeURIComponent(kode), { method: 'DELETE' });
+        const hasil = await respons.json();
+        if (!respons.ok) throw new Error(hasil.pesan);
+
+        if (kodeDiedit === kode) resetForm();
+        await muatProduk();
+        tampilkanPesan(hasil.pesan);
+      } catch (err) {
+        tampilkanPesan(err.message);
+      }
+    }
+
+    // Isi form saat tombol Edit ditekan
+    function isiFormEdit(produk) {
+      kodeDiedit = produk.kode_produk;
+      kolom.kode.value = produk.kode_produk;
+      kolom.kode.disabled = true;
+      kolom.nama.value = produk.nama_produk;
+      kolom.harga.value = produk.harga;
+      kolom.stok.value = produk.stok;
+      tombolSimpan.textContent = 'Perbarui';
+    }
+
+    function resetForm() {
+      kodeDiedit = null;
+      formProduk.reset();
+      kolom.kode.disabled = false;
+      tombolSimpan.textContent = 'Simpan';
+    }
+
+    formProduk.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await simpanProduk(bacaForm());
+    });
+
+    ambil('tombolBatal').addEventListener('click', resetForm);
+
+    muatProduk();
+  </script>
+</body>
+</html>

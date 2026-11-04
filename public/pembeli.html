@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beli</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="halaman-pembeli">
+  <h1>Beli</h1>
+  <a href="index.html">Halaman Admin</a>
+  <h3>Form Pembelian:</h3>
+
+  <form id="formPembelian">
+    <select id="pilihanProduk"></select>
+    <input id="inputJumlah" type="number" min="1" value="1" placeholder="Jumlah">
+    <button type="submit" id="tombolBeli">Beli</button>
+  </form>
+  <p id="teksPesan" role="status"></p>
+
+  <script>
+    const URL_PRODUK = '/api/produk';
+    const URL_BELI = '/api/beli';
+    const ambil = id => document.getElementById(id);
+
+    const formPembelian = ambil('formPembelian');
+    const pilihanProduk = ambil('pilihanProduk');
+    const inputJumlah = ambil('inputJumlah');
+    const teksPesan = ambil('teksPesan');
+
+    const tampilkanPesan = teks => { teksPesan.textContent = teks; };
+
+    function buatOpsi(produk) {
+      const opsi = document.createElement('option');
+      opsi.value = produk.kode_produk;
+      opsi.textContent = produk.nama_produk + ' - Rp ' + produk.harga +
+        ' (stok: ' + produk.stok + ')';
+      return opsi;
+    }
+
+    // Isi pilihan produk (GET)
+    async function muatProduk(kodeTerpilih) {
+      try {
+        const respons = await fetch(URL_PRODUK);
+        if (!respons.ok) throw new Error('Data produk tidak dapat diambil');
+
+        const daftarProduk = await respons.json();
+        pilihanProduk.replaceChildren(...daftarProduk.map(buatOpsi));
+        if (kodeTerpilih) pilihanProduk.value = kodeTerpilih;
+      } catch (err) {
+        tampilkanPesan(err.message);
+      }
+    }
+
+    // Kirim pembelian, stok berkurang (POST)
+    async function prosesPembelian(kode, jumlah) {
+      try {
+        const respons = await fetch(URL_BELI, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kode_produk: kode, jumlah })
+        });
+        const hasil = await respons.json();
+
+        await muatProduk(kode);
+        tampilkanPesan(hasil.pesan);
+      } catch (err) {
+        tampilkanPesan(err.message);
+      }
+    }
+
+    formPembelian.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!pilihanProduk.value) return tampilkanPesan('Belum ada produk yang tersedia');
+
+      const jumlah = parseInt(inputJumlah.value, 10);
+      await prosesPembelian(pilihanProduk.value, jumlah);
+    });
+
+    muatProduk();
+  </script>
+</body>
+</html>
